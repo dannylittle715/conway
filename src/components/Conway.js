@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import _ from 'lodash';
+import styled from 'styled-components';
 
 export const Conway = () => {
   const numRows = Math.floor(window.innerHeight / 33);
@@ -11,7 +12,7 @@ export const Conway = () => {
       rows.push(
         empty
           ? Array.from(Array(numCols), () => 0)
-          : Array.from(Array(numCols), () => (Math.random() > 0.7 ? 1 : 0))
+          : Array.from(Array(numCols), () => (Math.random() > 0.65 ? 1 : 0))
       );
     }
 
@@ -67,7 +68,6 @@ export const Conway = () => {
   }, [numRows, numCols]);
 
   useEffect(() => {
-    runningRef.current = true;
     simulate();
     const handleMouseUp = () => setDrawing(false);
     const handleMouseDown = () => setDrawing(true);
@@ -100,7 +100,6 @@ export const Conway = () => {
               Array.from(Array(numCols), () => (Math.random() > 0.7 ? 1 : 0))
             );
           }
-
           setGrid(rows);
         }}
       >
@@ -114,18 +113,11 @@ export const Conway = () => {
       >
         clear
       </button>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: `repeat(${numCols}, 30px)`,
-          gridTemplateRows: `repeat(${numRows}, 30px)`,
-          gap: '1px',
-        }}
-      >
+      <CellGrid numCols={numCols} numRows={numRows}>
         {grid.map((rows, r) =>
           rows.map((col, c) => (
             <div
-              key={`${r}-${c}`}
+              key={`${r}x${c}`}
               onClick={() => {
                 const gridCopy = _.cloneDeep(grid);
                 gridCopy[r][c] = 1;
@@ -143,9 +135,16 @@ export const Conway = () => {
             />
           ))
         )}
-      </div>
+      </CellGrid>
     </>
   );
 };
 
 export default Conway;
+
+const CellGrid = styled.div`
+  display: grid;
+  gap: 1px;
+  grid-template-columns: ${({ numCols }) => 'repeat(' + numCols + ', 30px)'};
+  grid-template-rows: ${({ numRows }) => 'repeat(' + numRows + ', 30px)'};
+`;
