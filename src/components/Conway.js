@@ -113,7 +113,7 @@ export const Conway = () => {
       >
         clear
       </button>
-      <CellGrid numCols={numCols} numRows={numRows}>
+      <CellGrid numCols={numCols} numRows={numRows} className='bongus'>
         {grid.map((rows, r) =>
           rows.map((col, c) => (
             <div
