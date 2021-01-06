@@ -143,7 +143,13 @@ export const Conway = ({ width, height }) => {
             </a>
           </small>
         </div>
-        <div style={{ maxWidth: '600px', margin: '0 auto', marginTop: '10px' }}>
+        <div
+          style={{
+            maxWidth: 'min(600px, 90%)',
+            margin: '0 auto',
+            marginTop: '10px',
+          }}
+        >
           Tips:
           <ul>
             <li>Try clicking and dragging on the board.</li>
@@ -158,21 +164,23 @@ export const Conway = ({ width, height }) => {
           </ul>
         </div>
       </div>
-      <Buttons>
-        <button onClick={handleStartStopClick}>
-          {running ? 'Stop' : 'Start'}
-        </button>
-        <button onClick={handleClearClick}>Clear</button>
-        <button
-          onClick={() => {
-            setGrid(generateGrid(false));
-            if (!running) {
-              setTimeout(handleStartStopClick, tick);
-            }
-          }}
-        >
-          Random
-        </button>
+      <Options>
+        <Buttons>
+          <button onClick={handleStartStopClick}>
+            {running ? 'Stop' : 'Start'}
+          </button>
+          <button onClick={handleClearClick}>Clear</button>
+          <button
+            onClick={() => {
+              setGrid(generateGrid(false));
+              if (!running) {
+                setTimeout(handleStartStopClick, tick);
+              }
+            }}
+          >
+            Random
+          </button>
+        </Buttons>
         <LabeledSlider>
           <label htmlFor='randomizer'>Percent living</label>
           <input
@@ -204,7 +212,7 @@ export const Conway = ({ width, height }) => {
             id='tick'
           />
         </LabeledSlider>
-      </Buttons>
+      </Options>
       <CellGrid numCols={numCols} numRows={numRows}>
         {grid.map((rows, r) =>
           rows.map((col, c) => (
@@ -237,6 +245,15 @@ const CellGrid = styled.div`
   display: grid;
   grid-template-columns: ${({ numCols }) => 'repeat(' + numCols + ', 30px)'};
   grid-template-rows: ${({ numRows }) => 'repeat(' + numRows + ', 30px)'};
+`;
+
+const Options = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  @media only screen and (max-width: 600px) {
+    flex-direction: column;
+  }
 `;
 
 const Buttons = styled.div`
