@@ -1,10 +1,20 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import _ from 'lodash';
 import styled from 'styled-components';
 
-export const Conway = () => {
-  const numRows = Math.floor(window.innerHeight / 33);
-  const numCols = Math.floor(window.innerWidth / 32);
+export const Conway = ({ width, height }) => {
+  const [randomizer, setRandomizer] = useState(0.4);
+  const [tick, setTick] = useState(600);
+
+  //grid logic
+  const numRows =
+    height === undefined
+      ? Math.floor(window.innerHeight / 40)
+      : Math.floor(height / 40);
+
+  const numCols =
+    width === undefined
+      ? Math.floor(window.innerWidth / 30)
+      : Math.floor(width / 30);
 
   const generateGrid = empty => {
     const rows = [];
@@ -12,10 +22,11 @@ export const Conway = () => {
       rows.push(
         empty
           ? Array.from(Array(numCols), () => 0)
-          : Array.from(Array(numCols), () => (Math.random() > 0.65 ? 1 : 0))
+          : Array.from(Array(numCols), () =>
+              Math.random() < randomizer ? 1 : 0
+            )
       );
     }
-
     return rows;
   };
 
@@ -25,10 +36,8 @@ export const Conway = () => {
   const runningRef = useRef(running);
   runningRef.current = running;
 
-  const simulate = useCallback(() => {
-    if (!runningRef.current) {
-      return;
-    }
+  const simulate = useCallback(async () => {
+    if (!runningRef.current) return;
 
     const operations = [
       [0, 1],
@@ -42,10 +51,11 @@ export const Conway = () => {
     ];
 
     setGrid(g => {
-      const gridCopy = _.cloneDeep(g);
+      const { gridCopy } = JSON.parse(JSON.stringify({ gridCopy: g }));
       for (let r = 0; r < numRows; r++) {
         for (let c = 0; c < numCols; c++) {
           let neighbors = 0;
+          if (g[r + 1] === undefined) return gridCopy;
           operations.forEach(([dr, dc]) => {
             const _r = r + dr;
             const _c = c + dc;
@@ -64,8 +74,8 @@ export const Conway = () => {
       return gridCopy;
     });
 
-    setTimeout(simulate, 500);
-  }, [numRows, numCols]);
+    setTimeout(() => requestAnimationFrame(simulate), tick);
+  }, [numRows, numCols, tick]);
 
   useEffect(() => {
     simulate();
@@ -79,72 +89,173 @@ export const Conway = () => {
     };
   }, [simulate]);
 
+  //click handlers
+  const handleStartStopClick = () => {
+    console.log(!running ? 'starting sim' : 'stopping sim');
+    setRunning(!running);
+    if (!running) {
+      runningRef.current = true;
+      simulate();
+    }
+  };
+
+  const startSimulation = () => {
+    if (!running) {
+      console.log('starting simulation');
+      setRunning(true);
+      runningRef.current = true;
+      simulate();
+    }
+  };
+
+  const handleClearClick = () => {
+    setRunning(false);
+    setGrid(generateGrid(true));
+  };
+
+  const handleCellClick = (r, c) => {
+    const { gridCopy } = JSON.parse(JSON.stringify({ gridCopy: grid }));
+    gridCopy[r][c] = 1;
+    setGrid(gridCopy);
+  };
+
+  const handleCellMove = (r, c) => {
+    if (!drawing) return;
+    const { gridCopy } = JSON.parse(JSON.stringify({ gridCopy: grid }));
+    gridCopy[r][c] = 1;
+    setGrid(gridCopy);
+  };
+
   return (
-    <>
-      <button
-        onClick={() => {
-          setRunning(!running);
-          if (!running) {
-            runningRef.current = true;
-            simulate();
-          }
-        }}
-      >
-        {running ? 'stop' : 'start'}
-      </button>
-      <button
-        onClick={() => {
-          const rows = [];
-          for (let i = 0; i < numRows; i++) {
-            rows.push(
-              Array.from(Array(numCols), () => (Math.random() > 0.7 ? 1 : 0))
-            );
-          }
-          setGrid(rows);
-        }}
-      >
-        random
-      </button>
-      <button
-        onClick={() => {
-          setRunning(false);
-          setGrid(generateGrid(true));
-        }}
-      >
-        clear
-      </button>
-      <CellGrid numCols={numCols} numRows={numRows} className='bongus'>
+    <div className='conway'>
+      <div>
+        <div style={{ textAlign: 'center' }}>
+          <a
+            href='https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life'
+            target='blank'
+          >
+            <h1>Conway's Game of Life</h1>
+          </a>
+          <small>
+            Made by{' '}
+            <a href='https://dannylittle.vercel.app' target='blank'>
+              Danny little
+            </a>
+          </small>
+        </div>
+        <div style={{ maxWidth: '600px', margin: '0 auto', marginTop: '10px' }}>
+          Tips:
+          <ul>
+            <li>Try clicking and dragging on the board.</li>
+            <li>
+              Try to find the position on the "Percent Alive" slider that
+              results in a stable game.
+            </li>
+            <li>
+              Click and drag on the sliders for best results! Clicking alone
+              results in some buginess.
+            </li>
+          </ul>
+        </div>
+      </div>
+      <Buttons>
+        <button onClick={handleStartStopClick}>
+          {running ? 'Stop' : 'Start'}
+        </button>
+        <button onClick={handleClearClick}>Clear</button>
+        <button
+          onClick={() => {
+            setGrid(generateGrid(false));
+            if (!running) {
+              setTimeout(handleStartStopClick, tick);
+            }
+          }}
+        >
+          Random
+        </button>
+        <LabeledSlider>
+          <label htmlFor='randomizer'>Percent living</label>
+          <input
+            type='range'
+            min='0'
+            max='100'
+            value={randomizer * 100}
+            onChange={e => setRandomizer(e.target.value / 100)}
+            onMouseDown={() => setRunning(false)}
+            onMouseUp={() => {
+              setGrid(generateGrid());
+              setTimeout(startSimulation, tick);
+            }}
+            id='randomizer'
+          />
+        </LabeledSlider>
+        <LabeledSlider>
+          <label htmlFor='tick'>Speed</label>
+          <input
+            type='range'
+            min='0'
+            max='800'
+            value={1000 - tick}
+            onChange={e => {
+              setTick(1000 - e.target.value);
+            }}
+            onMouseDown={() => setRunning(false)}
+            onMouseUp={startSimulation}
+            id='tick'
+          />
+        </LabeledSlider>
+      </Buttons>
+      <CellGrid numCols={numCols} numRows={numRows}>
         {grid.map((rows, r) =>
           rows.map((col, c) => (
             <div
               key={`${r}x${c}`}
-              onClick={() => {
-                const gridCopy = _.cloneDeep(grid);
-                gridCopy[r][c] = 1;
-                setGrid(gridCopy);
-              }}
-              onMouseMove={e => {
-                if (!drawing) return;
-                const gridCopy = _.cloneDeep(grid);
-                gridCopy[r][c] = 1;
-                setGrid(gridCopy);
-              }}
+              onClick={e => handleCellClick(r, c)}
+              onMouseMove={e => handleCellMove(r, c)}
               style={{
-                backgroundColor: grid[r][c] ? 'pink' : 'black',
+                backgroundColor: grid[r][c] ? '#4287f5' : '#111',
+                transition: 'background-color 200ms linear',
               }}
             />
           ))
         )}
       </CellGrid>
-    </>
+    </div>
   );
 };
 
 export default Conway;
 
+const LabeledSlider = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+
 const CellGrid = styled.div`
+  overflow-x: hidden;
+  justify-content: center;
   display: grid;
-  gap: 1px;
   grid-template-columns: ${({ numCols }) => 'repeat(' + numCols + ', 30px)'};
   grid-template-rows: ${({ numRows }) => 'repeat(' + numRows + ', 30px)'};
+`;
+
+const Buttons = styled.div`
+  height: 60px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  button {
+    transition: background 100ms;
+    border: none;
+    border-radius: 5px;
+    padding: 10px;
+    margin: 0 10px;
+    background: #f0f0f0;
+    font-size: 15px;
+    cursor: pointer;
+    :hover {
+      background: #4287f5;
+      color: #f0f0f0;
+    }
+  }
 `;
